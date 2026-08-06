@@ -6,7 +6,7 @@ import os
 # 1. CONFIGURATION DE LA PAGE
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="NOVA Assistant",
+    page_title="KryptIA",
     page_icon="🍎",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -150,7 +150,7 @@ st.markdown("""
 # ---------------------------------------------------------
 st.markdown("""
 <div class="apple-header">
-    <div class="apple-title">NOVA Assistant</div>
+    <div class="apple-title">KryptIA</div>
     <div class="apple-subtitle">Propulsé par Groq & Llama 3.3</div>
 </div>
 """, unsafe_allow_html=True)
@@ -178,18 +178,18 @@ if st.session_state.chat_active:
 
     # Affichage de l'historique
     for msg in st.session_state.messages:
-        avatar = "👤" if msg["role"] == "user" else "🤖"
+        avatar = "👻" if msg["role"] == "user" else "👽"
         with st.chat_message(msg["role"], avatar=avatar):
             st.write(msg["content"])
 
     # Zone de texte
     if prompt := st.chat_input("Posez votre question..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user", avatar="👤"):
+        with st.chat_message("user", avatar="👻"):
             st.write(prompt)
 
         if client:
-            with st.chat_message("assistant", avatar="🤖"):
+            with st.chat_message("assistant", avatar="👽"):
                 with st.spinner("Réflexion..."):
                     try:
                         response = client.chat.completions.create(
