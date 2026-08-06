@@ -15,7 +15,7 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# 2. DESIGN APPLE DARK / CSS GLOBAL UNIFIÉ
+# 2. DESIGN APPLE DARK / CSS GLOBAL CORRIGÉ & HARMONISÉ
 # ---------------------------------------------------------
 st.markdown("""
 <style>
@@ -37,7 +37,7 @@ st.markdown("""
     /* En-tête Apple */
     .apple-header {
         text-align: center;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
     }
     .apple-title {
         font-size: 2rem;
@@ -51,19 +51,25 @@ st.markdown("""
         margin-top: 2px;
     }
 
-    /* Badge de Statut */
-    .status-badge {
-        display: inline-block;
-        background-color: #161b22;
-        border: 1px solid #30363d;
+    /* Petit Badge de Statut Discret et Propre (Corrigé) */
+    .status-pill {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
         color: #3fb950;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.75rem;
+        font-size: 0.8rem;
         font-weight: 600;
-        margin-bottom: 15px;
+        margin-bottom: 20px;
         text-align: center;
-        width: 100%;
+    }
+    .status-dot {
+        height: 8px;
+        width: 8px;
+        background-color: #3fb950;
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 8px #3fb950;
     }
 
     /* Onglets Connexion / Inscription Style iOS Segmented Control */
@@ -132,14 +138,13 @@ st.markdown("""
         transform: scale(0.98);
     }
 
-    /* Bulles de Chat & Cartes Contextuelles */
+    /* Bulles de Chat Style Modèle (Épuré & Arrondi) */
     .stChatMessage {
         background-color: #161b22 !important;
         border: 1px solid #30363d !important;
         border-radius: 16px !important;
         padding: 14px 16px !important;
         margin-bottom: 12px !important;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
     
     .stChatMessage p, .stChatMessage div {
@@ -216,7 +221,7 @@ client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=api_key) if a
 st.markdown("""
 <div class="apple-header">
     <div class="apple-title">KryptIA</div>
-    <div class="apple-subtitle">Système Sécurisé Kryptia Core</div>
+    <div class="apple-subtitle">Propulsé par Groq & Llama 3.3</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -269,8 +274,12 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
-# Badge de statut en haut de l'espace utilisateur
-st.markdown('<div class="status-badge">🟢 Système Sécurisé Kryptia Core v2.4</div>', unsafe_allow_html=True)
+# Statut propre sans boîte moche
+st.markdown("""
+<div class="status-pill">
+    <span class="status-dot"></span> Système Sécurisé Kryptia Core v2.4
+</div>
+""", unsafe_allow_html=True)
 
 if "messages" not in st.session_state:
     st.session_state.messages = [
@@ -282,8 +291,8 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"], avatar=avatar):
         st.write(msg["content"])
 
-# Gestion des entrées (Chat ou Raccourcis)
-prompt = st.chat_input("Posez votre question à Kryptia...")
+# Gestion des entrées de chat
+prompt = st.chat_input("Posez votre question...")
 
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
