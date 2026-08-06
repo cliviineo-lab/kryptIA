@@ -15,11 +15,11 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# 2. DESIGN APPLE DARK / SNAPCHAT (CSS CUSTOM)
+# 2. DESIGN APPLE DARK / CSS GLOBAL CORRIGÉ
 # ---------------------------------------------------------
 st.markdown("""
 <style>
-    /* Arrière-plan global Anthracite */
+    /* Arrière-plan global Anthracite iOS */
     .stApp {
         background-color: #121214 !important;
         color: #f2f2f7 !important;
@@ -29,29 +29,29 @@ st.markdown("""
     #MainMenu, footer, header {visibility: hidden;}
     
     .block-container {
-        padding-top: 2rem;
-        padding-bottom: 5rem;
+        padding-top: 1.5rem;
+        padding-bottom: 6rem;
         max-width: 480px !important;
     }
 
     /* En-tête Apple */
     .apple-header {
         text-align: center;
-        margin-bottom: 25px;
+        margin-bottom: 20px;
     }
     .apple-title {
-        font-size: 2.2rem;
+        font-size: 2rem;
         font-weight: 700;
         color: #ffffff;
         letter-spacing: -0.5px;
     }
     .apple-subtitle {
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         color: #8e8e93;
         margin-top: 2px;
     }
 
-    /* Onglets Connexion / Inscription Style Apple Segmented Control */
+    /* Onglets Connexion / Inscription Style iOS Segmented Control */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0px !important;
         background-color: #1c1c1e !important;
@@ -61,7 +61,7 @@ st.markdown("""
     }
 
     .stTabs [data-baseweb="tab"] {
-        height: 42px !important;
+        height: 40px !important;
         background-color: transparent !important;
         border-radius: 10px !important;
         color: #8e8e93 !important;
@@ -78,7 +78,7 @@ st.markdown("""
         box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
     }
 
-    /* Styling des champs de saisie (Inputs) */
+    /* Champs de saisie */
     .stTextInput label {
         color: #8e8e93 !important;
         font-size: 13px !important;
@@ -117,22 +117,32 @@ st.markdown("""
         transform: scale(0.98);
     }
 
-    /* Bulles & Chat */
+    /* CORRECTION DES BULLES DE CHAT (Visibilité texte parfaite) */
     .stChatMessage {
         background-color: #1c1c1e !important;
         border: 1px solid #2c2c2e !important;
         border-radius: 16px !important;
-        padding: 12px 16px !important;
-        margin-bottom: 10px !important;
+        padding: 14px 16px !important;
+        margin-bottom: 12px !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
     
+    /* Assurer que tout texte dans le chat est bien blanc lumineux */
+    .stChatMessage p, .stChatMessage div {
+        color: #f2f2f7 !important;
+        font-size: 0.95rem !important;
+    }
+
+    /* Barre de saisie du chat fixée en bas avec design propre */
     .stChatInputContainer {
         border-radius: 20px !important;
         border: 1px solid #3a3a3c !important;
         background-color: #1c1c1e !important;
     }
     
-    .stChatInputContainer textarea { color: #ffffff !important; }
+    .stChatInputContainer textarea { 
+        color: #ffffff !important; 
+    }
 </style>
 """, unsafe_allow_html=True)
 
