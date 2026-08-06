@@ -5,59 +5,119 @@ import streamlit as st
 from openai import OpenAI
 
 # ---------------------------------------------------------
-# 1. CONFIGURATION DE LA PAGE & STYLE APPLE DARK
+# 1. CONFIGURATION DE LA PAGE
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="KryptIA",
     page_icon="🛡️",
-    layout="wide",
+    layout="centered",
     initial_sidebar_state="collapsed"
 )
 
+# ---------------------------------------------------------
+# 2. DESIGN APPLE DARK / SNAPCHAT (CSS CUSTOM)
+# ---------------------------------------------------------
 st.markdown("""
 <style>
-    /* Design Global Apple Dark */
+    /* Arrière-plan global Anthracite */
     .stApp {
         background-color: #121214 !important;
         color: #f2f2f7 !important;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;
     }
+    
     #MainMenu, footer, header {visibility: hidden;}
+    
     .block-container {
-        padding-top: 1.5rem;
+        padding-top: 2rem;
         padding-bottom: 5rem;
-        max-width: 800px;
+        max-width: 480px !important;
     }
+
+    /* En-tête Apple */
     .apple-header {
         text-align: center;
-        padding: 5px 0 15px 0;
+        margin-bottom: 25px;
     }
     .apple-title {
-        font-size: 1.8rem;
+        font-size: 2.2rem;
         font-weight: 700;
         color: #ffffff;
+        letter-spacing: -0.5px;
     }
     .apple-subtitle {
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         color: #8e8e93;
+        margin-top: 2px;
     }
-    
-    /* Inputs & Formulaires */
+
+    /* Onglets Connexion / Inscription Style Apple Segmented Control */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0px !important;
+        background-color: #1c1c1e !important;
+        padding: 4px !important;
+        border-radius: 14px !important;
+        border: 1px solid #2c2c2e !important;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        height: 42px !important;
+        background-color: transparent !important;
+        border-radius: 10px !important;
+        color: #8e8e93 !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        border: none !important;
+        flex: 1 !important;
+        justify-content: center !important;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background-color: #2c2c2e !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+    }
+
+    /* Styling des champs de saisie (Inputs) */
+    .stTextInput label {
+        color: #8e8e93 !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        margin-bottom: 4px !important;
+    }
+
     .stTextInput input {
         background-color: #1c1c1e !important;
         color: #ffffff !important;
         border: 1px solid #2c2c2e !important;
         border-radius: 12px !important;
+        padding: 12px !important;
     }
-    .stButton button {
-        background-color: #0a84ff !important;
-        color: #ffffff !important;
+
+    .stTextInput input:focus {
+        border-color: #0a84ff !important;
+    }
+
+    /* Bouton Blanc Style Apple (Texte Sombre Lisible) */
+    div.stButton > button {
+        width: 100% !important;
+        background-color: #ffffff !important;
+        color: #000000 !important;
         border: none !important;
-        border-radius: 12px !important;
-        font-weight: 600 !important;
+        border-radius: 14px !important;
+        padding: 14px 24px !important;
+        font-size: 15px !important;
+        font-weight: 700 !important;
+        margin-top: 15px !important;
+        box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15) !important;
     }
-    
-    /* Bulles de chat */
+
+    div.stButton > button:active {
+        background-color: #e5e5ea !important;
+        transform: scale(0.98);
+    }
+
+    /* Bulles & Chat */
     .stChatMessage {
         background-color: #1c1c1e !important;
         border: 1px solid #2c2c2e !important;
@@ -65,17 +125,19 @@ st.markdown("""
         padding: 12px 16px !important;
         margin-bottom: 10px !important;
     }
+    
     .stChatInputContainer {
         border-radius: 20px !important;
         border: 1px solid #3a3a3c !important;
         background-color: #1c1c1e !important;
     }
+    
     .stChatInputContainer textarea { color: #ffffff !important; }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 2. INITIALISATION BASE DE DONNÉES SQLITE
+# 3. BASE DE DONNÉES SQLITE
 # ---------------------------------------------------------
 DB_FILE = "kryptia_users.db"
 
@@ -102,7 +164,7 @@ def register_user(username, password):
         c.execute("INSERT INTO users (username, password_hash) VALUES (?, ?)", (username, hash_password(password)))
         conn.commit()
         conn.close()
-        return True, "Compte créé avec succès !"
+        return True, "Compte créé ! Connecte-toi maintenant."
     except sqlite3.IntegrityError:
         return False, "Ce pseudo existe déjà."
     except Exception as e:
@@ -116,16 +178,17 @@ def login_user(username, password):
     conn.close()
     return user
 
-# Lancement BDD
 init_db()
 
 # ---------------------------------------------------------
-# 3. CLIENT GROQ API
+# 4. CLIENT GROQ API
 # ---------------------------------------------------------
 api_key = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
 client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key=api_key) if api_key else None
 
-# En-tête
+# ---------------------------------------------------------
+# 5. HEADER PRINCIPAL
+# ---------------------------------------------------------
 st.markdown("""
 <div class="apple-header">
     <div class="apple-title">KryptIA</div>
@@ -134,7 +197,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 4. COMPTE / AUTHENTIFICATION
+# 6. AUTHENTIFICATION (CONNEXION / INSCRIPTION)
 # ---------------------------------------------------------
 if "user" not in st.session_state:
     st.session_state.user = None
@@ -143,21 +206,24 @@ if not st.session_state.user:
     tab1, tab2 = st.tabs(["Connexion", "Créer un compte"])
     
     with tab1:
-        username = st.text_input("Pseudo", key="login_user")
+        username = st.text_input("Pseudo", placeholder="Ex: Momo_Dev", key="login_user")
         password = st.text_input("Mot de passe", type="password", key="login_pass")
-        if st.button("Se connecter", use_container_width=True):
-            user = login_user(username, password)
-            if user:
-                st.session_state.user = username
-                st.success("Connexion réussie !")
-                st.rerun()
+        if st.button("Se connecter", key="btn_login"):
+            if username and password:
+                user = login_user(username, password)
+                if user:
+                    st.session_state.user = username
+                    st.success("Connexion réussie !")
+                    st.rerun()
+                else:
+                    st.error("Pseudo ou mot de passe incorrect.")
             else:
-                st.error("Pseudo ou mot de passe incorrect.")
+                st.warning("Remplis tous les champs.")
 
     with tab2:
         new_user = st.text_input("Choisis un Pseudo", key="reg_user")
         new_pass = st.text_input("Choisis un Mot de passe", type="password", key="reg_pass")
-        if st.button("S'inscrire", use_container_width=True):
+        if st.button("S'inscrire", key="btn_reg"):
             if new_user and new_pass:
                 success, msg = register_user(new_user, new_pass)
                 if success:
@@ -170,7 +236,7 @@ if not st.session_state.user:
     st.stop()
 
 # ---------------------------------------------------------
-# 5. ECRAN DE CHAT (UTILISATEUR CONNECTÉ)
+# 7. INTERFACE DU CHAT (UNE FOIS CONNECTÉ)
 # ---------------------------------------------------------
 with st.sidebar:
     st.write(f"👤 Connecté en tant que : **{st.session_state.user}**")
@@ -179,19 +245,16 @@ with st.sidebar:
         st.session_state.messages = []
         st.rerun()
 
-# Initialisation de l'historique de chat de la session
 if "messages" not in st.session_state:
     st.session_state.messages = [
         {"role": "assistant", "content": f"Bonjour {st.session_state.user}. Je suis KryptIA. Comment puis-je t'aider aujourd'hui ?"}
     ]
 
-# Affichage des messages avec les avatars 👻 et 👽
 for msg in st.session_state.messages:
     avatar = "👻" if msg["role"] == "user" else "👽"
     with st.chat_message(msg["role"], avatar=avatar):
         st.write(msg["content"])
 
-# Entrée du texte
 if prompt := st.chat_input("Posez votre question..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user", avatar="👻"):
