@@ -15,14 +15,14 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# 2. DESIGN APPLE DARK / CSS GLOBAL CORRIGÉ
+# 2. DESIGN APPLE DARK / CSS GLOBAL UNIFIÉ
 # ---------------------------------------------------------
 st.markdown("""
 <style>
     /* Arrière-plan global Anthracite iOS */
     .stApp {
-        background-color: #121214 !important;
-        color: #f2f2f7 !important;
+        background-color: #0d1117 !important;
+        color: #f0f6fc !important;
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", sans-serif !important;
     }
     
@@ -47,24 +47,39 @@ st.markdown("""
     }
     .apple-subtitle {
         font-size: 0.85rem;
-        color: #8e8e93;
+        color: #8b949e;
         margin-top: 2px;
+    }
+
+    /* Badge de Statut */
+    .status-badge {
+        display: inline-block;
+        background-color: #161b22;
+        border: 1px solid #30363d;
+        color: #3fb950;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+        text-align: center;
+        width: 100%;
     }
 
     /* Onglets Connexion / Inscription Style iOS Segmented Control */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0px !important;
-        background-color: #1c1c1e !important;
+        background-color: #161b22 !important;
         padding: 4px !important;
         border-radius: 14px !important;
-        border: 1px solid #2c2c2e !important;
+        border: 1px solid #30363d !important;
     }
 
     .stTabs [data-baseweb="tab"] {
         height: 40px !important;
         background-color: transparent !important;
         border-radius: 10px !important;
-        color: #8e8e93 !important;
+        color: #8b949e !important;
         font-size: 14px !important;
         font-weight: 600 !important;
         border: none !important;
@@ -73,36 +88,36 @@ st.markdown("""
     }
 
     .stTabs [aria-selected="true"] {
-        background-color: #2c2c2e !important;
+        background-color: #30363d !important;
         color: #ffffff !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
     }
 
-    /* Champs de saisie */
+    /* Champs de saisie Formulaire */
     .stTextInput label {
-        color: #8e8e93 !important;
+        color: #8b949e !important;
         font-size: 13px !important;
         font-weight: 500 !important;
         margin-bottom: 4px !important;
     }
 
     .stTextInput input {
-        background-color: #1c1c1e !important;
+        background-color: #161b22 !important;
         color: #ffffff !important;
-        border: 1px solid #2c2c2e !important;
+        border: 1px solid #30363d !important;
         border-radius: 12px !important;
         padding: 12px !important;
     }
 
     .stTextInput input:focus {
-        border-color: #0a84ff !important;
+        border-color: #1f6feb !important;
     }
 
     /* Bouton Blanc Style Apple (Texte Sombre Lisible) */
     div.stButton > button {
         width: 100% !important;
         background-color: #ffffff !important;
-        color: #000000 !important;
+        color: #0d1117 !important;
         border: none !important;
         border-radius: 14px !important;
         padding: 14px 24px !important;
@@ -113,31 +128,30 @@ st.markdown("""
     }
 
     div.stButton > button:active {
-        background-color: #e5e5ea !important;
+        background-color: #e6e6e6 !important;
         transform: scale(0.98);
     }
 
-    /* CORRECTION DES BULLES DE CHAT (Visibilité texte parfaite) */
+    /* Bulles de Chat & Cartes Contextuelles */
     .stChatMessage {
-        background-color: #1c1c1e !important;
-        border: 1px solid #2c2c2e !important;
+        background-color: #161b22 !important;
+        border: 1px solid #30363d !important;
         border-radius: 16px !important;
         padding: 14px 16px !important;
         margin-bottom: 12px !important;
         box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
     
-    /* Assurer que tout texte dans le chat est bien blanc lumineux */
     .stChatMessage p, .stChatMessage div {
-        color: #f2f2f7 !important;
+        color: #f0f6fc !important;
         font-size: 0.95rem !important;
     }
 
-    /* Barre de saisie du chat fixée en bas avec design propre */
+    /* Barre de saisie du chat fixée en bas */
     .stChatInputContainer {
         border-radius: 20px !important;
-        border: 1px solid #3a3a3c !important;
-        background-color: #1c1c1e !important;
+        border: 1px solid #30363d !important;
+        background-color: #161b22 !important;
     }
     
     .stChatInputContainer textarea { 
@@ -207,7 +221,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 6. AUTHENTIFICATION (CONNEXION / INSCRIPTION)
+# 6. AUTHENTIFICATION (FORMULAIRE CONNEXION / INSCRIPTION)
 # ---------------------------------------------------------
 if "user" not in st.session_state:
     st.session_state.user = None
@@ -246,18 +260,21 @@ if not st.session_state.user:
     st.stop()
 
 # ---------------------------------------------------------
-# 7. INTERFACE DU CHAT (UNE FOIS CONNECTÉ)
+# 7. ESPACE UTILISATEUR & CHAT
 # ---------------------------------------------------------
 with st.sidebar:
-    st.write(f"👤 Connecté en tant que : **{st.session_state.user}**")
+    st.write(f"👤 Connecté : **{st.session_state.user}**")
     if st.button("Déconnexion", use_container_width=True):
         st.session_state.user = None
         st.session_state.messages = []
         st.rerun()
 
+# Badge de statut en haut de l'espace utilisateur
+st.markdown('<div class="status-badge">🟢 Système Sécurisé Kryptia Core v2.4</div>', unsafe_allow_html=True)
+
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": f"Bonjour {st.session_state.user}. Je suis KryptIA. Comment puis-je t'aider aujourd'hui ?"}
+        {"role": "assistant", "content": f"Bonjour {st.session_state.user} !\nJe suis **KryptIA**. Comment puis-je t'aider dans vos projets aujourd'hui ?"}
     ]
 
 for msg in st.session_state.messages:
@@ -265,7 +282,10 @@ for msg in st.session_state.messages:
     with st.chat_message(msg["role"], avatar=avatar):
         st.write(msg["content"])
 
-if prompt := st.chat_input("Posez votre question..."):
+# Gestion des entrées (Chat ou Raccourcis)
+prompt = st.chat_input("Posez votre question à Kryptia...")
+
+if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user", avatar="👻"):
         st.write(prompt)
