@@ -6,8 +6,8 @@ import os
 # 1. CONFIGURATION DE LA PAGE
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="KryptIA",
-    page_icon="🍎",
+    page_title="KryptIA Assistant",
+    page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -27,17 +27,17 @@ if api_key:
 # Session State
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "Bonjour. Comment puis-je vous aider aujourd'hui ?"}
+        {"role": "assistant", "content": "Bonjour. Je suis KryptIA. Comment puis-je vous aider ?"}
     ]
 if "chat_active" not in st.session_state:
-    st.session_state.chat_active = True  # Activé par défaut pour plus de simplicité
+    st.session_state.chat_active = True
 
 # ---------------------------------------------------------
-# 3. CSS CUSTOM : STYLE APPLE DARK MODE (ANTI-ROUGE FOCUS)
+# 3. CSS CUSTOM : STYLE APPLE DARK MODE & ALIEN AVATARS
 # ---------------------------------------------------------
 st.markdown("""
 <style>
-    /* Reset & Fond Anthracite Apple (Reposant) */
+    /* Reset & Fond Anthracite Apple */
     .stApp {
         background-color: #121214 !important;
         color: #f2f2f7 !important;
@@ -47,23 +47,23 @@ st.markdown("""
     /* Nettoyage des menus Streamlit */
     #MainMenu, footer, header {visibility: hidden;}
     .block-container {
-        padding-top: 2rem;
+        padding-top: 1.5rem;
         padding-bottom: 3rem;
         max-width: 800px;
     }
 
-    /* En-tête Style iOS */
+    /* En-tête Style iOS KryptIA */
     .apple-header {
         text-align: center;
-        padding: 20px 0 10px 0;
+        padding: 10px 0 5px 0;
     }
 
     .apple-title {
-        font-size: 1.6rem;
-        font-weight: 600;
+        font-size: 1.8rem;
+        font-weight: 700;
         letter-spacing: -0.5px;
         color: #ffffff;
-        margin-bottom: 4px;
+        margin-bottom: 2px;
     }
 
     .apple-subtitle {
@@ -78,12 +78,10 @@ st.markdown("""
         border: 1px solid #2c2c2e !important;
         color: #0a84ff !important;
         border-radius: 12px !important;
-        padding: 12px 20px !important;
-        font-size: 0.95rem !important;
-        font-weight: 500 !important;
+        padding: 10px 20px !important;
+        font-size: 0.9rem !important;
         transition: all 0.2s ease !important;
         width: 100% !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
     }
 
     div.stButton > button:active {
@@ -98,55 +96,45 @@ st.markdown("""
         border-radius: 16px !important;
         padding: 12px 16px !important;
         margin-bottom: 10px !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
     }
 
-    /* Texte dans le Chat (Gris voyant & très lisible) */
+    /* Texte dans le Chat */
     .stChatMessage p, .stChatMessage div {
         color: #e5e5ea !important;
         font-size: 0.98rem !important;
-        line-height: 1.5 !important;
     }
 
-    /* Champ de saisie iOS (SANS CONTOUR ROUGE) */
+    /* Personnalisation des Avatars (Alien / Fantôme) */
+    .stChatMessage [data-testid="stChatMessageAvatar"] {
+        background-color: transparent !important;
+        border: none !important;
+        font-size: 1.6rem !important; /* Taille de l'émoji */
+    }
+
+    /* Champ de saisie iOS (SANS ROUGE) */
     .stChatInputContainer {
         border-radius: 20px !important;
         border: 1px solid #3a3a3c !important;
         background-color: #1c1c1e !important;
     }
 
-    /* Suppression de l'effet rouge Streamlit au clic / focus */
-    .stChatInputContainer:focus-within, 
-    .stChatInputContainer:focus,
-    textarea:focus {
-        border-color: #0a84ff !important; /* Devient bleu Apple au lieu de rouge */
-        box-shadow: 0 0 8px rgba(10, 132, 255, 0.3) !important;
-        outline: none !important;
+    .stChatInputContainer:focus-within {
+        border-color: #0a84ff !important;
+        box-shadow: 0 0 8px rgba(10, 132, 255, 0.2) !important;
     }
 
-    .stChatInputContainer textarea {
-        color: #ffffff !important;
-        font-size: 0.95rem !important;
-    }
-
-    /* Modifie le bouton d'envoi (flèche) */
     .stChatInputContainer button {
         color: #0a84ff !important;
     }
 
     /* Scrollbar discrète */
-    ::-webkit-scrollbar {
-        width: 6px;
-    }
-    ::-webkit-scrollbar-thumb {
-        background: #3a3a3c;
-        border-radius: 10px;
-    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-thumb { background: #3a3a3c; border-radius: 10px; }
 </style>
-""", unsafe_allow_html=True) 
+""", unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 4. EN-TÊTE DE L'APPLICATION
+# 4. EN-TÊTE DE L'APPLICATION KRYPTIA
 # ---------------------------------------------------------
 st.markdown("""
 <div class="apple-header">
@@ -176,8 +164,9 @@ if st.session_state.chat_active:
     if not client:
         st.error("⚠️ GROQ_API_KEY non configurée.")
 
-    # Affichage de l'historique
+    # Affichage de l'historique avec avatars Alien/Fantôme
     for msg in st.session_state.messages:
+        # User = Fantôme, Assistant = Alien
         avatar = "👻" if msg["role"] == "user" else "👽"
         with st.chat_message(msg["role"], avatar=avatar):
             st.write(msg["content"])
@@ -195,7 +184,8 @@ if st.session_state.chat_active:
                         response = client.chat.completions.create(
                             model="llama-3.3-70b-versatile",
                             messages=[
-                                {"role": "system", "content": "Tu es un assistant virtuel utile, poli, précis et concis. Tu réponds dans la langue de l'utilisateur."},
+                                # System Prompt mis à jour avec le nom KryptIA
+                                {"role": "system", "content": "Tu es KryptIA, un assistant virtuel utile, poli, précis et concis. Ton interface est moderne et sécurisée. Tu réponds dans la langue de l'utilisateur."},
                                 *[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
                             ],
                             temperature=0.7,
