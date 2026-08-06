@@ -1,1 +1,1 @@
-# Kimi-chat-app
+# KryptIA
