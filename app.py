@@ -6,8 +6,8 @@ import os
 # 1. CONFIGURATION DE LA PAGE
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="NOVA Core HUD",
-    page_icon="⚡",
+    page_title="NOVA Assistant",
+    page_icon="🍎",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -24,157 +24,164 @@ if api_key:
         api_key=api_key
     )
 
-# Initialisation de l'état de la session
+# Session State
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "assistant", "content": "Système NOVA en ligne. En attente d'instructions."}
+        {"role": "assistant", "content": "Bonjour. Comment puis-je vous aider aujourd'hui ?"}
     ]
 if "chat_active" not in st.session_state:
-    st.session_state.chat_active = False
+    st.session_state.chat_active = True  # Activé par défaut pour plus de simplicité
 
 # ---------------------------------------------------------
-# 3. CSS CUSTOM : DESIGN SCI-FI / HUD MOBILE-FIRST
+# 3. CSS CUSTOM : STYLE APPLE DARK MODE (iOS/macOS)
 # ---------------------------------------------------------
 st.markdown("""
 <style>
-    /* Reset & Dark Cyberpunk Theme */
+    /* Reset & Fond Anthracite Apple (Reposant) */
     .stApp {
-        background-color: #050811;
-        background-image: 
-            radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.05) 0%, transparent 70%),
-            linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
-        background-size: 100% 100%, 30px 30px, 30px 30px;
-        color: #e0f7fc;
-        font-family: 'Courier New', Courier, monospace;
+        background-color: #121214 !important;
+        color: #f2f2f7 !important;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     }
     
-    /* Masquer les éléments Streamlit superflus */
+    /* Nettoyage des menus Streamlit */
     #MainMenu, footer, header {visibility: hidden;}
     .block-container {
         padding-top: 2rem;
-        padding-bottom: 2rem;
-        max-width: 100%;
+        padding-bottom: 3rem;
+        max-width: 800px; /* Centré et compact comme une app iOS */
     }
 
-    /* Core HUD Central Animation */
-    .hud-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        margin-top: 5vh;
-        margin-bottom: 3vh;
+    /* En-tête Style iOS */
+    .apple-header {
+        text-align: center;
+        padding: 20px 0 10px 0;
     }
 
-    .hud-title {
-        font-size: 1.8rem;
-        letter-spacing: 4px;
-        color: #00f0ff;
-        text-shadow: 0 0 10px rgba(0, 240, 255, 0.7);
-        text-transform: uppercase;
-        margin-bottom: 10px;
-        font-weight: bold;
+    .apple-title {
+        font-size: 1.6rem;
+        font-weight: 600;
+        letter-spacing: -0.5px;
+        color: #ffffff;
+        margin-bottom: 4px;
     }
 
-    .hud-status {
-        font-size: 0.8rem;
-        color: #39ff14;
-        letter-spacing: 2px;
-        margin-bottom: 25px;
-        text-shadow: 0 0 5px rgba(57, 255, 20, 0.5);
+    .apple-subtitle {
+        font-size: 0.85rem;
+        color: #8e8e93; /* Gris secondaire Apple */
+        font-weight: 400;
     }
 
-    /* Boutons Streamlit en style Sci-Fi / Cyber Glass */
+    /* Bouton principal Bleu Apple */
     div.stButton > button {
-        background: rgba(0, 240, 255, 0.05) !important;
-        border: 1px solid #00f0ff !important;
-        color: #00f0ff !important;
-        box-shadow: 0 0 15px rgba(0, 240, 255, 0.2), inset 0 0 15px rgba(0, 240, 255, 0.1) !important;
-        border-radius: 8px !important;
-        padding: 12px 24px !important;
-        font-family: 'Courier New', monospace !important;
-        font-weight: bold !important;
-        letter-spacing: 2px !important;
-        transition: all 0.3s ease !important;
+        background-color: #1c1c1e !important;
+        border: 1px solid #2c2c2e !important;
+        color: #0a84ff !important; /* Bleu iOS */
+        border-radius: 12px !important;
+        padding: 12px 20px !important;
+        font-size: 0.95rem !important;
+        font-weight: 500 !important;
+        transition: all 0.2s ease !important;
         width: 100% !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
     }
 
-    div.stButton > button:hover {
-        background: rgba(0, 240, 255, 0.2) !important;
-        box-shadow: 0 0 25px rgba(0, 240, 255, 0.6) !important;
-        color: #ffffff !important;
+    div.stButton > button:active {
+        transform: scale(0.98);
+        background-color: #2c2c2e !important;
     }
 
-    /* Bulles de Chat Sci-Fi */
+    /* Messages & Bulles de Chat */
     .stChatMessage {
-        background: rgba(5, 15, 30, 0.75) !important;
-        border: 1px solid rgba(0, 240, 255, 0.3) !important;
-        border-radius: 10px !important;
-        box-shadow: 0 0 10px rgba(0, 240, 255, 0.1) !important;
-        backdrop-filter: blur(8px);
-        margin-bottom: 12px;
+        background-color: #1c1c1e !important;
+        border: 1px solid #2c2c2e !important;
+        border-radius: 16px !important;
+        padding: 12px 16px !important;
+        margin-bottom: 10px !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
     }
 
-    /* Style du chat input */
+    /* Texte dans le Chat (Gris voyant & très lisible) */
+    .stChatMessage p, .stChatMessage div {
+        color: #e5e5ea !important;
+        font-size: 0.98rem !important;
+        line-height: 1.5 !important;
+    }
+
+    /* Champ de saisie iOS */
     .stChatInputContainer {
-        border-color: #00f0ff !important;
-        box-shadow: 0 0 15px rgba(0, 240, 255, 0.3) !important;
+        border-radius: 20px !important;
+        border: 1px solid #3a3a3c !important;
+        background-color: #1c1c1e !important;
+    }
+
+    .stChatInputContainer textarea {
+        color: #ffffff !important;
+        font-size: 0.95rem !important;
+    }
+
+    /* Scrollbar discrète */
+    ::-webkit-scrollbar {
+        width: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #3a3a3c;
+        border-radius: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# 4. EN-TÊTE DU HUD
+# 4. EN-TÊTE DE L'APPLICATION
 # ---------------------------------------------------------
 st.markdown("""
-<div class="hud-container">
-    <div class="hud-title">⚡ NOVA CORE v2.0 ⚡</div>
-    <div class="hud-status">● SYSTEM STATUS: ONLINE</div>
+<div class="apple-header">
+    <div class="apple-title">NOVA Assistant</div>
+    <div class="apple-subtitle">Propulsé par Groq & Llama 3.3</div>
 </div>
 """, unsafe_allow_html=True)
 
+st.markdown("<br>", unsafe_allow_html=True)
+
 # ---------------------------------------------------------
-# 5. CONTROLES CENTRAUX (ACTIVER / DÉSACTIVER TERMINAL)
+# 5. CONTROLES (OPTIONNEL : MASQUER / AFFICHER)
 # ---------------------------------------------------------
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    button_label = "CLOSE TERMINAL" if st.session_state.chat_active else "OPEN INTERFACE"
-    if st.button(button_label, use_container_width=True):
+    toggle_text = "Masquer la conversation" if st.session_state.chat_active else "Ouvrir l'assistant"
+    if st.button(toggle_text, use_container_width=True):
         st.session_state.chat_active = not st.session_state.chat_active
         st.rerun()
 
 # ---------------------------------------------------------
-# 6. MODULE CHAT OVERLAY
+# 6. INTERFACE DE DISCUSSION
 # ---------------------------------------------------------
 if st.session_state.chat_active:
-    st.markdown("---")
+    st.write("")
     
-    # Message d'avertissement si la clé API n'est pas définie
     if not client:
-        st.error("⚠️ GROQ_API_KEY non détectée dans les secrets Streamlit.")
-    
-    # Affichage des messages
+        st.error("⚠️ GROQ_API_KEY non configurée.")
+
+    # Affichage de l'historique
     for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
+        avatar = "👤" if msg["role"] == "user" else "🤖"
+        with st.chat_message(msg["role"], avatar=avatar):
             st.write(msg["content"])
 
-    # Champ de saisie utilisateur
-    if prompt := st.chat_input("Saisissez votre commande..."):
-        # Ajout du message utilisateur
+    # Zone de texte
+    if prompt := st.chat_input("Posez votre question..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
+        with st.chat_message("user", avatar="👤"):
             st.write(prompt)
 
-        # Génération de la réponse via Groq (SDK OpenAI)
         if client:
-            with st.chat_message("assistant"):
-                with st.spinner("TRAITEMENT EN COURS..."):
+            with st.chat_message("assistant", avatar="🤖"):
+                with st.spinner("Réflexion..."):
                     try:
                         response = client.chat.completions.create(
                             model="llama-3.3-70b-versatile",
                             messages=[
-                                {"role": "system", "content": "Tu es NOVA, une IA de bord Sci-Fi haute performance. Tes réponses sont concises, techniques et efficaces."},
+                                {"role": "system", "content": "Tu es un assistant virtuel utile, poli, précis et concis. Tu réponds dans la langue de l'utilisateur."},
                                 *[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
                             ],
                             temperature=0.7,
@@ -184,4 +191,4 @@ if st.session_state.chat_active:
                         st.write(reply)
                         st.session_state.messages.append({"role": "assistant", "content": reply})
                     except Exception as e:
-                        st.error(f"Erreur de communication : {str(e)}")
+                        st.error(f"Erreur : {str(e)}")
