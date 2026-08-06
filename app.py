@@ -1,150 +1,147 @@
 import streamlit as st
-from openai import OpenAI
+from groq import Groq
+import os
 
-# ------------------------------------------------------------------------------
-# 1. CONFIGURATION & STYLES CSS SUR-MESURE
-# ------------------------------------------------------------------------------
+# --- CONFIGURATION PAGE MOBILE ---
 st.set_page_config(
-    page_title="HUD Sci-Fi Mobile",
-    page_icon="⚡",
-    layout="wide"
+    page_title="Sci-Fi Hologram HUD",
+    page_icon="🛸",
+    layout="centered",
+    initial_sidebar_state="collapsed"
 )
 
+# --- INJECTION CSS : SUPERPOSITION & GLASSMORPHISM ---
 st.markdown("""
-    <style>
-    header, footer, #MainMenu { visibility: hidden !important; }
-    .block-container { padding: 0.8rem !important; }
-    .stApp { background-color: #02070d; }
-
-    .hud-header {
-        text-align: center;
-        color: #00f0ff;
-        font-family: monospace;
-        font-size: 1.2rem;
-        font-weight: bold;
-        letter-spacing: 2px;
-        margin-bottom: 10px;
-        text-shadow: 0 0 10px rgba(0,240,255,0.5);
-    }
-
-    div.stButton > button {
-        background: rgba(4, 25, 45, 0.8) !important;
-        border: 1px solid #00d5ff !important;
-        color: #9ee6f5 !important;
-        font-family: monospace !important;
-        font-size: 0.85rem !important;
-        font-weight: bold !important;
-        border-radius: 6px !important;
-        padding: 10px 5px !important;
-        width: 100% !important;
-        box-shadow: 0 0 8px rgba(0, 213, 255, 0.2) !important;
-        transition: all 0.2s ease !important;
+<style>
+    /* Fond global */
+    .stApp {
+        background-color: #05070a;
+        color: #00ff66;
+        font-family: 'Courier New', monospace;
     }
     
-    div.stButton > button:active, div.stButton > button:focus {
-        background: rgba(0, 240, 255, 0.25) !important;
-        border-color: #00f0ff !important;
-        color: #ffffff !important;
-        box-shadow: 0 0 15px rgba(0, 240, 255, 0.6) !important;
+    #MainMenu, footer, header {visibility: hidden;}
+
+    /* 1. LE CERCLE EN ARRIÈRE-PLAN (FIXED BACKDROP) */
+    .hud-bg-container {
+        position: fixed;
+        top: 15%;
+        left: 50%;
+        transform: translate(-50%, 0);
+        z-index: 0; /* Derrière le chat */
+        pointer-events: none; /* Laisse passer les clics au-travers si besoin */
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 
-    .bot-reply {
-        background: rgba(0, 240, 255, 0.08);
-        border-left: 3px solid #00f0ff;
-        padding: 10px;
-        border-radius: 4px;
-        color: #8be4f0;
-        font-family: monospace;
-        font-size: 0.9rem;
-        margin-bottom: 10px;
+    .hud-bg-circle {
+        width: 220px;
+        height: 220px;
+        border-radius: 50%;
+        border: 2px dashed rgba(0, 255, 102, 0.4);
+        box-shadow: 0 0 30px rgba(0, 255, 102, 0.2), inset 0 0 20px rgba(0, 255, 102, 0.1);
+        background: radial-gradient(circle, rgba(0,255,102,0.1) 0%, rgba(5,7,10,0.8) 70%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        animation: rotateBg 20s linear infinite;
     }
 
-    .user-msg {
-        background: rgba(255, 0, 127, 0.08);
-        border-right: 3px solid #ff007f;
-        padding: 10px;
-        border-radius: 4px;
-        color: #ff8ce0;
-        font-family: monospace;
-        font-size: 0.9rem;
-        text-align: right;
-        margin-bottom: 10px;
+    @keyframes rotateBg {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
-    </style>
+
+    /* 2. LA FENÊTRE DE CHAT SUPERPOSÉE (GLASSMORPHISM) */
+    .stMainBlockContainer {
+        position: relative;
+        z-index: 10; /* Au-dessus du cercle */
+        padding-top: 1rem !important;
+    }
+
+    /* Conteneur de Chat semi-transparent */
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        background: rgba(9, 14, 23, 0.75) !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        border: 1px solid rgba(0, 255, 102, 0.5) !important;
+        border-radius: 12px !important;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 255, 102, 0.2) !important;
+    }
+
+    /* Style du Bouton-Cercle de commande (s'il est affiché) */
+    div.stButton > button {
+        background: rgba(5, 7, 10, 0.6) !important;
+        border: 1px solid #00ff66 !important;
+        color: #00ff66 !important;
+        font-family: 'Courier New', monospace !important;
+        border-radius: 20px !important;
+    }
+</style>
 """, unsafe_allow_html=True)
 
-# ------------------------------------------------------------------------------
-# 2. INITIALISATION GROQ (Via le client OpenAI)
-# ------------------------------------------------------------------------------
-if "active_module" not in st.session_state:
-    st.session_state.active_module = "CORE_CHAT"
+# --- GESTION DE L'ÉTAT ---
+if "chat_open" not in st.session_state:
+    st.session_state.chat_open = True
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Récupération de la clé Groq dans les secrets Streamlit
-groq_key = st.secrets.get("GROQ_API_KEY", "").strip()
+# GROQ CLIENT
+api_key = os.environ.get("GROQ_API_KEY", "")
+client = Groq(api_key=api_key) if api_key else None
 
-# On pointe le client OpenAI vers le serveur de Groq
-client = OpenAI(
-    api_key=groq_key,
-    base_url="https://api.groq.com/openai/v1"
-) if groq_key else None
+# --- 1. RENDU DU CERCLE HUD (ARRIÈRE-PLAN PERMANENT) ---
+st.markdown("""
+<div class="hud-bg-container">
+    <div class="hud-bg-circle">
+        <span style="font-size: 11px; color: #00ff66; opacity: 0.8; font-weight: bold;">CORE SYSTEM</span>
+        <span style="font-size: 9px; color: #00f3ff; opacity: 0.6;">[ HOLO-LINK ]</span>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-# ------------------------------------------------------------------------------
-# 3. INTERFACE TACTILE MOBILE
-# ------------------------------------------------------------------------------
-st.markdown("<div class='hud-header'>🛰️ TERMINAL GROQ HUD</div>", unsafe_allow_html=True)
+# --- 2. FENÊTRE DE CHAT EN AVANT-PLAN ---
 
-col1, col2, col3 = st.columns(3)
-
+# Barre de contrôle de la fenêtre
+col1, col2 = st.columns([3, 1])
 with col1:
-    if st.button("📷 CAMERA"): st.session_state.active_module = "CAMERA"
-    if st.button("🌐 NETWORK"): st.session_state.active_module = "NETWORK"
-    if st.button("⚙️ CONFIG"): st.session_state.active_module = "CONFIG"
-
+    st.caption("🛸 HUD CONSOLE // OVERLAY")
 with col2:
-    if st.button("⚡ CORE"): st.session_state.active_module = "CORE_CHAT"
-    if st.button("🔄 MODES"): st.session_state.active_module = "MODES"
-    if st.button("🚫 EXIT"): st.session_state.active_module = "EXIT"
+    label_btn = "❌ MUTE" if st.session_state.chat_open else "💬 CHAT"
+    if st.button(label_btn):
+        st.session_state.chat_open = not st.session_state.chat_open
+        st.rerun()
 
-with col3:
-    if st.button("🎬 MEDIA"): st.session_state.active_module = "MEDIA"
-    if st.button("📚 LIBRARY"): st.session_state.active_module = "LIBRARY"
-    if st.button("🔥 PURGE"): st.session_state.active_module = "PURGE"
+# Fenêtre de Chat Flottante (Si activée)
+if st.session_state.chat_open:
+    with st.container(border=True):
+        chat_box = st.container(height=320)
+        
+        with chat_box:
+            if not st.session_state.messages:
+                st.markdown("*[ FENÊTRE DE DIALOGUE ACTIVÉE - Cercle en arrière-plan ]*")
+            for msg in st.session_state.messages:
+                prefix = "🟢 > SYSTEM:" if msg["role"] == "assistant" else "👤 > USER:"
+                st.markdown(f"**{prefix}** {msg['content']}")
 
-st.markdown("---")
+        # Champ d'écriture
+        if user_input := st.chat_input("Envoyer un ordre..."):
+            st.session_state.messages.append({"role": "user", "content": user_input})
+            
+            if client:
+                try:
+                    response = client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
+                    )
+                    bot_reply = response.choices[0].message.content
+                except Exception as e:
+                    bot_reply = f"[ERR] Transmission: {str(e)}"
+            else:
+                bot_reply = "[DEMO] Clé GROQ_API_KEY non configurée."
 
-# ------------------------------------------------------------------------------
-# 4. CHAT GROQ EN DIRECT
-# ------------------------------------------------------------------------------
-st.markdown(f"#### 🛰️ MODULE SELECTIONNÉ : `<{st.session_state.active_module}>`", unsafe_allow_html=True)
-
-for msg in st.session_state.messages:
-    if msg["role"] == "user":
-        st.markdown(f'<div class="user-msg"><b>VOUS:</b> {msg["content"]}</div>', unsafe_allow_html=True)
-    else:
-        st.markdown(f'<div class="bot-reply"><b>GROQ ({st.session_state.active_module}):</b><br>{msg["content"]}</div>', unsafe_allow_html=True)
-
-if prompt := st.chat_input(f"Commande pour {st.session_state.active_module}..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    
-    if not client:
-        st.error("❌ Clé GROQ_API_KEY manquante dans les Secrets Streamlit.")
-    else:
-        with st.spinner("Analyse système..."):
-            try:
-                # Modèle ultra-rapide et 100% gratuit chez Groq : llama-3.3-70b-versatile
-                response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=[
-                        {"role": "system", "content": f"Tu es l'IA du HUD Sci-Fi. Réponds brièvement avec un style futuriste sous l'angle du module {st.session_state.active_module}."},
-                        *st.session_state.messages
-                    ],
-                    temperature=0.7
-                )
-                bot_answer = response.choices[0].message.content
-                st.session_state.messages.append({"role": "assistant", "content": bot_answer})
-                st.rerun()
-            except Exception as e:
-                st.error(f"Erreur API Groq : {e}")
+            st.session_state.messages.append({"role": "assistant", "content": bot_reply})
+            st.rerun()
