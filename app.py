@@ -1,198 +1,148 @@
-import streamlit as st
-from openai import OpenAI
 import os
+import uuid
+import streamlit as st
+from groq import Groq
 
-# ---------------------------------------------------------
-# 1. CONFIGURATION DE LA PAGE
-# ---------------------------------------------------------
-st.set_page_config(
-    page_title="KryptIA Assistant",
-    page_icon="🛡️",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+# 1. Configuration de la page (Dark Mode style iOS)
+st.set_page_config(page_title="KryptIA", page_icon="🔒", layout="centered")
 
-# ---------------------------------------------------------
-# 2. INITIALISATION DU CLIENT GROQ (VIA OPENAI SDK)
-# ---------------------------------------------------------
-api_key = os.environ.get("GROQ_API_KEY", "")
-
-client = None
-if api_key:
-    client = OpenAI(
-        base_url="https://api.groq.com/openai/v1",
-        api_key=api_key
-    )
-
-# Session State
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "assistant", "content": "Bonjour. Je suis KryptIA. Comment puis-je vous aider ?"}
-    ]
-if "chat_active" not in st.session_state:
-    st.session_state.chat_active = True
-
-# ---------------------------------------------------------
-# 3. CSS CUSTOM : STYLE APPLE DARK MODE & ALIEN AVATARS
-# ---------------------------------------------------------
+# Style CSS sombre et épuré
 st.markdown("""
-<style>
-    /* Reset & Fond Anthracite Apple */
+    <style>
     .stApp {
-        background-color: #121214 !important;
-        color: #f2f2f7 !important;
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-    }
-    
-    /* Nettoyage des menus Streamlit */
-    #MainMenu, footer, header {visibility: hidden;}
-    .block-container {
-        padding-top: 1.5rem;
-        padding-bottom: 3rem;
-        max-width: 800px;
-    }
-
-    /* En-tête Style iOS KryptIA */
-    .apple-header {
-        text-align: center;
-        padding: 10px 0 5px 0;
-    }
-
-    .apple-title {
-        font-size: 1.8rem;
-        font-weight: 700;
-        letter-spacing: -0.5px;
+        background-color: #0b0b0e;
         color: #ffffff;
-        margin-bottom: 2px;
     }
-
-    .apple-subtitle {
-        font-size: 0.85rem;
-        color: #8e8e93;
-        font-weight: 400;
-    }
-
-    /* Bouton principal Bleu Apple */
     div.stButton > button {
-        background-color: #1c1c1e !important;
-        border: 1px solid #2c2c2e !important;
-        color: #0a84ff !important;
-        border-radius: 12px !important;
-        padding: 10px 20px !important;
-        font-size: 0.9rem !important;
-        transition: all 0.2s ease !important;
-        width: 100% !important;
+        width: 100%;
+        background-color: #1c1c24;
+        color: #ffffff;
+        border: 1px solid #2c2c38;
+        border-radius: 8px;
     }
-
-    div.stButton > button:active {
-        transform: scale(0.98);
-        background-color: #2c2c2e !important;
+    div.stButton > button:hover {
+        background-color: #2c2c38;
+        border-color: #3c3c4c;
     }
-
-    /* Messages & Bulles de Chat */
-    .stChatMessage {
-        background-color: #1c1c1e !important;
-        border: 1px solid #2c2c2e !important;
-        border-radius: 16px !important;
-        padding: 12px 16px !important;
-        margin-bottom: 10px !important;
-    }
-
-    /* Texte dans le Chat */
-    .stChatMessage p, .stChatMessage div {
-        color: #e5e5ea !important;
-        font-size: 0.98rem !important;
-    }
-
-    /* Personnalisation des Avatars (Alien / Fantôme) */
-    .stChatMessage [data-testid="stChatMessageAvatar"] {
-        background-color: transparent !important;
-        border: none !important;
-        font-size: 1.6rem !important; /* Taille de l'émoji */
-    }
-
-    /* Champ de saisie iOS (SANS ROUGE) */
-    .stChatInputContainer {
-        border-radius: 20px !important;
-        border: 1px solid #3a3a3c !important;
-        background-color: #1c1c1e !important;
-    }
-
-    .stChatInputContainer:focus-within {
-        border-color: #0a84ff !important;
-        box-shadow: 0 0 8px rgba(10, 132, 255, 0.2) !important;
-    }
-
-    .stChatInputContainer button {
-        color: #0a84ff !important;
-    }
-
-    /* Scrollbar discrète */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-thumb { background: #3a3a3c; border-radius: 10px; }
-</style>
+    </style>
 """, unsafe_allow_html=True)
 
-# ---------------------------------------------------------
-# 4. EN-TÊTE DE L'APPLICATION KRYPTIA
-# ---------------------------------------------------------
-st.markdown("""
-<div class="apple-header">
-    <div class="apple-title">KryptIA</div>
-    <div class="apple-subtitle">Propulsé par Groq & Llama 3.3</div>
-</div>
-""", unsafe_allow_html=True)
+st.title("🔒 KryptIA")
 
-st.markdown("<br>", unsafe_allow_html=True)
+# 2. Clé API Groq
+api_key = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
 
-# ---------------------------------------------------------
-# 5. CONTROLES (OPTIONNEL : MASQUER / AFFICHER)
-# ---------------------------------------------------------
-col1, col2, col3 = st.columns([1, 2, 1])
-with col2:
-    toggle_text = "Masquer la conversation" if st.session_state.chat_active else "Ouvrir l'assistant"
-    if st.button(toggle_text, use_container_width=True):
-        st.session_state.chat_active = not st.session_state.chat_active
-        st.rerun()
+if not api_key:
+    st.error("Clé API Groq manquante. Configurez GROQ_API_KEY dans les Secrets.")
+    st.stop()
 
-# ---------------------------------------------------------
-# 6. INTERFACE DE DISCUSSION
-# ---------------------------------------------------------
-if st.session_state.chat_active:
-    st.write("")
+client = Groq(api_key=api_key)
+
+# 3. Initialisation du gestionnaire de conversations
+if "chats" not in st.session_state:
+    # Structure : { chat_id: { "title": str, "messages": list } }
+    first_id = str(uuid.uuid4())
+    st.session_state.chats = {
+        first_id: {
+            "title": "Discussion 1",
+            "messages": [
+                {"role": "system", "content": "Tu es KryptIA, une IA sécurisée, intelligente et concise."}
+            ]
+        }
+    }
+    st.session_state.current_chat_id = first_id
+
+# Fonction pour créer un nouveau chat
+def create_new_chat():
+    new_id = str(uuid.uuid4())
+    count = len(st.session_state.chats) + 1
+    st.session_state.chats[new_id] = {
+        "title": f"Discussion {count}",
+        "messages": [
+            {"role": "system", "content": "Tu es KryptIA, une IA sécurisée, intelligente et concise."}
+        ]
+    }
+    st.session_state.current_chat_id = new_id
+
+# 4. Barre latérale (Sidebar) - Gestion des discussions
+with st.sidebar:
+    st.header("💬 KryptIA Conversations")
     
-    if not client:
-        st.error("⚠️ GROQ_API_KEY non configurée.")
+    # Bouton Nouvelle Discussion
+    if st.button("➕ Nouvelle conversation"):
+        create_new_chat()
+        st.rerun()
+        
+    st.markdown("---")
+    st.subheader("Vos discussions")
+    
+    # Liste dynamique des conversations
+    for chat_id, chat_data in list(st.session_state.chats.items()):
+        # Bouton sélectionné ou non
+        is_active = (chat_id == st.session_state.current_chat_id)
+        label = f"👉 {chat_data['title']}" if is_active else f"💬 {chat_data['title']}"
+        
+        if st.button(label, key=f"btn_{chat_id}"):
+            st.session_state.current_chat_id = chat_id
+            st.rerun()
 
-    # Affichage de l'historique avec avatars Alien/Fantôme
-    for msg in st.session_state.messages:
-        # User = Fantôme, Assistant = Alien
-        avatar = "👻" if msg["role"] == "user" else "👽"
-        with st.chat_message(msg["role"], avatar=avatar):
-            st.write(msg["content"])
+    st.markdown("---")
+    
+    # Bouton pour supprimer la conversation courante
+    if st.button("🗑️ Supprimer cette conversation"):
+        if len(st.session_state.chats) > 1:
+            del st.session_state.chats[st.session_state.current_chat_id]
+            st.session_state.current_chat_id = list(st.session_state.chats.keys())[0]
+            st.rerun()
+        else:
+            # Réinitialiser si c'est la seule restante
+            first_id = list(st.session_state.chats.keys())[0]
+            st.session_state.chats[first_id]["messages"] = [
+                {"role": "system", "content": "Tu es KryptIA, une IA sécurisée, intelligente et concise."}
+            ]
+            st.session_state.chats[first_id]["title"] = "Discussion 1"
+            st.rerun()
 
-    # Zone de texte
-    if prompt := st.chat_input("Posez votre question..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user", avatar="👻"):
-            st.write(prompt)
+# 5. Récupération du chat actif
+current_chat = st.session_state.chats[st.session_state.current_chat_id]
+messages = current_chat["messages"]
 
-        if client:
-            with st.chat_message("assistant", avatar="👽"):
-                with st.spinner("Réflexion..."):
-                    try:
-                        response = client.chat.completions.create(
-                            model="llama-3.3-70b-versatile",
-                            messages=[
-                                # System Prompt mis à jour avec le nom KryptIA
-                                {"role": "system", "content": "Tu es KryptIA, un assistant virtuel utile, poli, précis et concis. Ton interface est moderne et sécurisée. Tu réponds dans la langue de l'utilisateur."},
-                                *[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
-                            ],
-                            temperature=0.7,
-                            max_tokens=1024
-                        )
-                        reply = response.choices[0].message.content
-                        st.write(reply)
-                        st.session_state.messages.append({"role": "assistant", "content": reply})
-                    except Exception as e:
-                        st.error(f"Erreur : {str(e)}")
+# 6. Affichage de l'historique du chat actif
+for msg in messages:
+    if msg["role"] != "system":
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+# 7. Entrée utilisateur et réponse de l'IA
+if prompt := st.chat_input("Pose une question à KryptIA..."):
+    # Si c'est le premier message utilisateur de la discussion, renommer le titre automatiquement
+    user_msgs_count = len([m for m in messages if m["role"] == "user"])
+    if user_msgs_count == 0:
+        # Prendre les 25 premiers caractères du message comme titre
+        short_title = prompt[:25] + "..." if len(prompt) > 25 else prompt
+        current_chat["title"] = short_title
+
+    # Affichage immédiat du message utilisateur
+    st.chat_message("user").markdown(prompt)
+    messages.append({"role": "user", "content": prompt})
+
+    # Génération de la réponse via Groq
+    with st.chat_message("assistant"):
+        with st.spinner("KryptIA réfléchit..."):
+            try:
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=messages,
+                    temperature=0.7,
+                    max_tokens=1024
+                )
+                
+                bot_reply = response.choices[0].message.content
+                st.markdown(bot_reply)
+                
+                # Sauvegarde de la réponse
+                messages.append({"role": "assistant", "content": bot_reply})
+                st.rerun()
+                
+            except Exception as e:
+                st.error(f"Erreur de connexion : {e}")
