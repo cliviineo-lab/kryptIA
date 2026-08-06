@@ -33,7 +33,7 @@ if "chat_active" not in st.session_state:
     st.session_state.chat_active = True  # Activé par défaut pour plus de simplicité
 
 # ---------------------------------------------------------
-# 3. CSS CUSTOM : STYLE APPLE DARK MODE (iOS/macOS)
+# 3. CSS CUSTOM : STYLE APPLE DARK MODE (ANTI-ROUGE FOCUS)
 # ---------------------------------------------------------
 st.markdown("""
 <style>
@@ -49,7 +49,7 @@ st.markdown("""
     .block-container {
         padding-top: 2rem;
         padding-bottom: 3rem;
-        max-width: 800px; /* Centré et compact comme une app iOS */
+        max-width: 800px;
     }
 
     /* En-tête Style iOS */
@@ -68,7 +68,7 @@ st.markdown("""
 
     .apple-subtitle {
         font-size: 0.85rem;
-        color: #8e8e93; /* Gris secondaire Apple */
+        color: #8e8e93;
         font-weight: 400;
     }
 
@@ -76,7 +76,7 @@ st.markdown("""
     div.stButton > button {
         background-color: #1c1c1e !important;
         border: 1px solid #2c2c2e !important;
-        color: #0a84ff !important; /* Bleu iOS */
+        color: #0a84ff !important;
         border-radius: 12px !important;
         padding: 12px 20px !important;
         font-size: 0.95rem !important;
@@ -108,16 +108,30 @@ st.markdown("""
         line-height: 1.5 !important;
     }
 
-    /* Champ de saisie iOS */
+    /* Champ de saisie iOS (SANS CONTOUR ROUGE) */
     .stChatInputContainer {
         border-radius: 20px !important;
         border: 1px solid #3a3a3c !important;
         background-color: #1c1c1e !important;
     }
 
+    /* Suppression de l'effet rouge Streamlit au clic / focus */
+    .stChatInputContainer:focus-within, 
+    .stChatInputContainer:focus,
+    textarea:focus {
+        border-color: #0a84ff !important; /* Devient bleu Apple au lieu de rouge */
+        box-shadow: 0 0 8px rgba(10, 132, 255, 0.3) !important;
+        outline: none !important;
+    }
+
     .stChatInputContainer textarea {
         color: #ffffff !important;
         font-size: 0.95rem !important;
+    }
+
+    /* Modifie le bouton d'envoi (flèche) */
+    .stChatInputContainer button {
+        color: #0a84ff !important;
     }
 
     /* Scrollbar discrète */
@@ -129,7 +143,7 @@ st.markdown("""
         border-radius: 10px;
     }
 </style>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=True) 
 
 # ---------------------------------------------------------
 # 4. EN-TÊTE DE L'APPLICATION
