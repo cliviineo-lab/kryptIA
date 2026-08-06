@@ -2,22 +2,20 @@ import streamlit as st
 from openai import OpenAI
 
 # ------------------------------------------------------------------------------
-# 1. CONFIGURATION & STYLES CSS SUR-MESURE (ZÉRO IFRAME, ZÉRO PAGE BLANCHE)
+# 1. CONFIGURATION & STYLES CSS SUR-MESURE
 # ------------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Kimi Terminal Mobile",
+    page_title="HUD Sci-Fi Mobile",
     page_icon="⚡",
     layout="wide"
 )
 
 st.markdown("""
     <style>
-    /* Masquage des éléments Streamlit inutiles */
     header, footer, #MainMenu { visibility: hidden !important; }
     .block-container { padding: 0.8rem !important; }
     .stApp { background-color: #02070d; }
 
-    /* Titre futuriste */
     .hud-header {
         text-align: center;
         color: #00f0ff;
@@ -29,7 +27,6 @@ st.markdown("""
         text-shadow: 0 0 10px rgba(0,240,255,0.5);
     }
 
-    /* Redéfinition des boutons Streamlit en Boutons Néon Tactiles */
     div.stButton > button {
         background: rgba(4, 25, 45, 0.8) !important;
         border: 1px solid #00d5ff !important;
@@ -51,7 +48,6 @@ st.markdown("""
         box-shadow: 0 0 15px rgba(0, 240, 255, 0.6) !important;
     }
 
-    /* Bulles de Chat FUI */
     .bot-reply {
         background: rgba(0, 240, 255, 0.08);
         border-left: 3px solid #00f0ff;
@@ -78,7 +74,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ------------------------------------------------------------------------------
-# 2. GESTION DE SESSION & APIS
+# 2. INITIALISATION GROQ (Via le client OpenAI)
 # ------------------------------------------------------------------------------
 if "active_module" not in st.session_state:
     st.session_state.active_module = "CORE_CHAT"
@@ -86,15 +82,20 @@ if "active_module" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-moonshot_key = st.secrets.get("MOONSHOT_API_KEY")
-client = OpenAI(api_key=moonshot_key, base_url="https://api.moonshot.cn/v1") if moonshot_key else None
+# Récupération de la clé Groq dans les secrets Streamlit
+groq_key = st.secrets.get("GROQ_API_KEY", "").strip()
+
+# On pointe le client OpenAI vers le serveur de Groq
+client = OpenAI(
+    api_key=groq_key,
+    base_url="https://api.groq.com/openai/v1"
+) if groq_key else None
 
 # ------------------------------------------------------------------------------
-# 3. INTERFACE TACTILE MOBILE (PANNEAU DE COMMANDE EN GRILLE)
+# 3. INTERFACE TACTILE MOBILE
 # ------------------------------------------------------------------------------
-st.markdown("<div class='hud-header'>🛰️ TERMINAL KIMI HUD</div>", unsafe_allow_html=True)
+st.markdown("<div class='hud-header'>🛰️ TERMINAL GROQ HUD</div>", unsafe_allow_html=True)
 
-# Grille de 3 colonnes pour les boutons (Super facile à cliqueter au pouce)
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -103,7 +104,7 @@ with col1:
     if st.button("⚙️ CONFIG"): st.session_state.active_module = "CONFIG"
 
 with col2:
-    if st.button("⚡ KIMI CORE"): st.session_state.active_module = "CORE_CHAT"
+    if st.button("⚡ CORE"): st.session_state.active_module = "CORE_CHAT"
     if st.button("🔄 MODES"): st.session_state.active_module = "MODES"
     if st.button("🚫 EXIT"): st.session_state.active_module = "EXIT"
 
@@ -115,30 +116,29 @@ with col3:
 st.markdown("---")
 
 # ------------------------------------------------------------------------------
-# 4. CHAT ET RÉPONSES EN DIRECT
+# 4. CHAT GROQ EN DIRECT
 # ------------------------------------------------------------------------------
 st.markdown(f"#### 🛰️ MODULE SELECTIONNÉ : `<{st.session_state.active_module}>`", unsafe_allow_html=True)
 
-# Historique
 for msg in st.session_state.messages:
     if msg["role"] == "user":
         st.markdown(f'<div class="user-msg"><b>VOUS:</b> {msg["content"]}</div>', unsafe_allow_html=True)
     else:
-        st.markdown(f'<div class="bot-reply"><b>KIMI ({st.session_state.active_module}):</b><br>{msg["content"]}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="bot-reply"><b>GROQ ({st.session_state.active_module}):</b><br>{msg["content"]}</div>', unsafe_allow_html=True)
 
-# Input Chat
 if prompt := st.chat_input(f"Commande pour {st.session_state.active_module}..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     
     if not client:
-        st.error("❌ Clé API Moonshot manquante.")
+        st.error("❌ Clé GROQ_API_KEY manquante dans les Secrets Streamlit.")
     else:
-        with st.spinner("Kimi analyse..."):
+        with st.spinner("Analyse système..."):
             try:
+                # Modèle ultra-rapide et 100% gratuit chez Groq : llama-3.3-70b-versatile
                 response = client.chat.completions.create(
-                    model="moonshot-v1-8k",
+                    model="llama-3.3-70b-versatile",
                     messages=[
-                        {"role": "system", "content": f"Tu es l'IA du HUD. Réponds sous l'angle du module {st.session_state.active_module}."},
+                        {"role": "system", "content": f"Tu es l'IA du HUD Sci-Fi. Réponds brièvement avec un style futuriste sous l'angle du module {st.session_state.active_module}."},
                         *st.session_state.messages
                     ],
                     temperature=0.7
@@ -147,4 +147,4 @@ if prompt := st.chat_input(f"Commande pour {st.session_state.active_module}...")
                 st.session_state.messages.append({"role": "assistant", "content": bot_answer})
                 st.rerun()
             except Exception as e:
-                st.error(f"Erreur API : {e}")
+                st.error(f"Erreur API Groq : {e}")
