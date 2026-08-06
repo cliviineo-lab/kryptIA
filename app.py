@@ -2,8 +2,8 @@ import streamlit as st
 from openai import OpenAI
 
 # 1. Configuration de la page
-st.set_page_config(page_title="Kimi K3 Chat", page_icon="💬")
-st.title("💬 Kimi K3 Assistant")
+st.set_page_config(page_title="Que souhaite-tu ?", page_icon="💬")
+st.title("💬 Assistant Privé ")
 
 # 2. Récupération sécurisée de la clé API via les Secrets
 if "MOONSHOT_API_KEY" not in st.secrets:
