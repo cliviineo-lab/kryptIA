@@ -1,147 +1,187 @@
 import streamlit as st
-from groq import Groq
+from openai import OpenAI
 import os
 
-# --- CONFIGURATION PAGE MOBILE ---
+# ---------------------------------------------------------
+# 1. CONFIGURATION DE LA PAGE
+# ---------------------------------------------------------
 st.set_page_config(
-    page_title="Sci-Fi Hologram HUD",
-    page_icon="🛸",
-    layout="centered",
+    page_title="NOVA Core HUD",
+    page_icon="⚡",
+    layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- INJECTION CSS : SUPERPOSITION & GLASSMORPHISM ---
+# ---------------------------------------------------------
+# 2. INITIALISATION DU CLIENT GROQ (VIA OPENAI SDK)
+# ---------------------------------------------------------
+api_key = os.environ.get("GROQ_API_KEY", "")
+
+client = None
+if api_key:
+    client = OpenAI(
+        base_url="https://api.groq.com/openai/v1",
+        api_key=api_key
+    )
+
+# Initialisation de l'état de la session
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {"role": "assistant", "content": "Système NOVA en ligne. En attente d'instructions."}
+    ]
+if "chat_active" not in st.session_state:
+    st.session_state.chat_active = False
+
+# ---------------------------------------------------------
+# 3. CSS CUSTOM : DESIGN SCI-FI / HUD MOBILE-FIRST
+# ---------------------------------------------------------
 st.markdown("""
 <style>
-    /* Fond global */
+    /* Reset & Dark Cyberpunk Theme */
     .stApp {
-        background-color: #05070a;
-        color: #00ff66;
-        font-family: 'Courier New', monospace;
+        background-color: #050811;
+        background-image: 
+            radial-gradient(circle at 50% 50%, rgba(0, 240, 255, 0.05) 0%, transparent 70%),
+            linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+        background-size: 100% 100%, 30px 30px, 30px 30px;
+        color: #e0f7fc;
+        font-family: 'Courier New', Courier, monospace;
     }
     
+    /* Masquer les éléments Streamlit superflus */
     #MainMenu, footer, header {visibility: hidden;}
-
-    /* 1. LE CERCLE EN ARRIÈRE-PLAN (FIXED BACKDROP) */
-    .hud-bg-container {
-        position: fixed;
-        top: 15%;
-        left: 50%;
-        transform: translate(-50%, 0);
-        z-index: 0; /* Derrière le chat */
-        pointer-events: none; /* Laisse passer les clics au-travers si besoin */
-        display: flex;
-        justify-content: center;
-        align-items: center;
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        max-width: 100%;
     }
 
-    .hud-bg-circle {
-        width: 220px;
-        height: 220px;
-        border-radius: 50%;
-        border: 2px dashed rgba(0, 255, 102, 0.4);
-        box-shadow: 0 0 30px rgba(0, 255, 102, 0.2), inset 0 0 20px rgba(0, 255, 102, 0.1);
-        background: radial-gradient(circle, rgba(0,255,102,0.1) 0%, rgba(5,7,10,0.8) 70%);
+    /* Core HUD Central Animation */
+    .hud-container {
         display: flex;
         flex-direction: column;
-        justify-content: center;
         align-items: center;
-        animation: rotateBg 20s linear infinite;
+        justify-content: center;
+        margin-top: 5vh;
+        margin-bottom: 3vh;
     }
 
-    @keyframes rotateBg {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
+    .hud-title {
+        font-size: 1.8rem;
+        letter-spacing: 4px;
+        color: #00f0ff;
+        text-shadow: 0 0 10px rgba(0, 240, 255, 0.7);
+        text-transform: uppercase;
+        margin-bottom: 10px;
+        font-weight: bold;
     }
 
-    /* 2. LA FENÊTRE DE CHAT SUPERPOSÉE (GLASSMORPHISM) */
-    .stMainBlockContainer {
-        position: relative;
-        z-index: 10; /* Au-dessus du cercle */
-        padding-top: 1rem !important;
+    .hud-status {
+        font-size: 0.8rem;
+        color: #39ff14;
+        letter-spacing: 2px;
+        margin-bottom: 25px;
+        text-shadow: 0 0 5px rgba(57, 255, 20, 0.5);
     }
 
-    /* Conteneur de Chat semi-transparent */
-    [data-testid="stVerticalBlockBorderWrapper"] {
-        background: rgba(9, 14, 23, 0.75) !important;
-        backdrop-filter: blur(8px) !important;
-        -webkit-backdrop-filter: blur(8px) !important;
-        border: 1px solid rgba(0, 255, 102, 0.5) !important;
-        border-radius: 12px !important;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 255, 102, 0.2) !important;
-    }
-
-    /* Style du Bouton-Cercle de commande (s'il est affiché) */
+    /* Boutons Streamlit en style Sci-Fi / Cyber Glass */
     div.stButton > button {
-        background: rgba(5, 7, 10, 0.6) !important;
-        border: 1px solid #00ff66 !important;
-        color: #00ff66 !important;
+        background: rgba(0, 240, 255, 0.05) !important;
+        border: 1px solid #00f0ff !important;
+        color: #00f0ff !important;
+        box-shadow: 0 0 15px rgba(0, 240, 255, 0.2), inset 0 0 15px rgba(0, 240, 255, 0.1) !important;
+        border-radius: 8px !important;
+        padding: 12px 24px !important;
         font-family: 'Courier New', monospace !important;
-        border-radius: 20px !important;
+        font-weight: bold !important;
+        letter-spacing: 2px !important;
+        transition: all 0.3s ease !important;
+        width: 100% !important;
+    }
+
+    div.stButton > button:hover {
+        background: rgba(0, 240, 255, 0.2) !important;
+        box-shadow: 0 0 25px rgba(0, 240, 255, 0.6) !important;
+        color: #ffffff !important;
+    }
+
+    /* Bulles de Chat Sci-Fi */
+    .stChatMessage {
+        background: rgba(5, 15, 30, 0.75) !important;
+        border: 1px solid rgba(0, 240, 255, 0.3) !important;
+        border-radius: 10px !important;
+        box-shadow: 0 0 10px rgba(0, 240, 255, 0.1) !important;
+        backdrop-filter: blur(8px);
+        margin-bottom: 12px;
+    }
+
+    /* Style du chat input */
+    .stChatInputContainer {
+        border-color: #00f0ff !important;
+        box-shadow: 0 0 15px rgba(0, 240, 255, 0.3) !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- GESTION DE L'ÉTAT ---
-if "chat_open" not in st.session_state:
-    st.session_state.chat_open = True
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# GROQ CLIENT
-api_key = os.environ.get("GROQ_API_KEY", "")
-client = Groq(api_key=api_key) if api_key else None
-
-# --- 1. RENDU DU CERCLE HUD (ARRIÈRE-PLAN PERMANENT) ---
+# ---------------------------------------------------------
+# 4. EN-TÊTE DU HUD
+# ---------------------------------------------------------
 st.markdown("""
-<div class="hud-bg-container">
-    <div class="hud-bg-circle">
-        <span style="font-size: 11px; color: #00ff66; opacity: 0.8; font-weight: bold;">CORE SYSTEM</span>
-        <span style="font-size: 9px; color: #00f3ff; opacity: 0.6;">[ HOLO-LINK ]</span>
-    </div>
+<div class="hud-container">
+    <div class="hud-title">⚡ NOVA CORE v2.0 ⚡</div>
+    <div class="hud-status">● SYSTEM STATUS: ONLINE</div>
 </div>
 """, unsafe_allow_html=True)
 
-# --- 2. FENÊTRE DE CHAT EN AVANT-PLAN ---
-
-# Barre de contrôle de la fenêtre
-col1, col2 = st.columns([3, 1])
-with col1:
-    st.caption("🛸 HUD CONSOLE // OVERLAY")
+# ---------------------------------------------------------
+# 5. CONTROLES CENTRAUX (ACTIVER / DÉSACTIVER TERMINAL)
+# ---------------------------------------------------------
+col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
-    label_btn = "❌ MUTE" if st.session_state.chat_open else "💬 CHAT"
-    if st.button(label_btn):
-        st.session_state.chat_open = not st.session_state.chat_open
+    button_label = "CLOSE TERMINAL" if st.session_state.chat_active else "OPEN INTERFACE"
+    if st.button(button_label, use_container_width=True):
+        st.session_state.chat_active = not st.session_state.chat_active
         st.rerun()
 
-# Fenêtre de Chat Flottante (Si activée)
-if st.session_state.chat_open:
-    with st.container(border=True):
-        chat_box = st.container(height=320)
-        
-        with chat_box:
-            if not st.session_state.messages:
-                st.markdown("*[ FENÊTRE DE DIALOGUE ACTIVÉE - Cercle en arrière-plan ]*")
-            for msg in st.session_state.messages:
-                prefix = "🟢 > SYSTEM:" if msg["role"] == "assistant" else "👤 > USER:"
-                st.markdown(f"**{prefix}** {msg['content']}")
+# ---------------------------------------------------------
+# 6. MODULE CHAT OVERLAY
+# ---------------------------------------------------------
+if st.session_state.chat_active:
+    st.markdown("---")
+    
+    # Message d'avertissement si la clé API n'est pas définie
+    if not client:
+        st.error("⚠️ GROQ_API_KEY non détectée dans les secrets Streamlit.")
+    
+    # Affichage des messages
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.write(msg["content"])
 
-        # Champ d'écriture
-        if user_input := st.chat_input("Envoyer un ordre..."):
-            st.session_state.messages.append({"role": "user", "content": user_input})
-            
-            if client:
-                try:
-                    response = client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
-                        messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
-                    )
-                    bot_reply = response.choices[0].message.content
-                except Exception as e:
-                    bot_reply = f"[ERR] Transmission: {str(e)}"
-            else:
-                bot_reply = "[DEMO] Clé GROQ_API_KEY non configurée."
+    # Champ de saisie utilisateur
+    if prompt := st.chat_input("Saisissez votre commande..."):
+        # Ajout du message utilisateur
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.write(prompt)
 
-            st.session_state.messages.append({"role": "assistant", "content": bot_reply})
-            st.rerun()
+        # Génération de la réponse via Groq (SDK OpenAI)
+        if client:
+            with st.chat_message("assistant"):
+                with st.spinner("TRAITEMENT EN COURS..."):
+                    try:
+                        response = client.chat.completions.create(
+                            model="llama-3.3-70b-versatile",
+                            messages=[
+                                {"role": "system", "content": "Tu es NOVA, une IA de bord Sci-Fi haute performance. Tes réponses sont concises, techniques et efficaces."},
+                                *[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
+                            ],
+                            temperature=0.7,
+                            max_tokens=1024
+                        )
+                        reply = response.choices[0].message.content
+                        st.write(reply)
+                        st.session_state.messages.append({"role": "assistant", "content": reply})
+                    except Exception as e:
+                        st.error(f"Erreur de communication : {str(e)}")
